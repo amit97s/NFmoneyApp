@@ -65,7 +65,7 @@ const TransactionTable = ({ transactions, type, onDelete }) => {
               />
             </th>
             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
-            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">VN. NO.</th>
+            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Voucher No</th>
             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Account</th>
             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
             <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase">Expenses</th>

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
+import API_BASE_URL from '../config/api';
 
 const AddNew = () => {
   const location = useLocation();
@@ -19,15 +20,20 @@ const AddNew = () => {
   }, []);
 
   const fetchUsers = async () => {
+    const controller = new AbortController();
     try {
-      const response = await fetch('http://localhost:5000/api/users');
+      const response = await fetch(`${API_BASE_URL}/api/users`, {
+        signal: controller.signal
+      });
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
       }
     } catch (error) {
+      if (error.name === 'AbortError') return;
       console.error('Error fetching users:', error);
     }
+    return () => controller.abort();
   };
 
   const handleChange = (e) => {
@@ -39,8 +45,21 @@ const AddNew = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    // Check for duplicate entries
+    const isDuplicate = users.some(user => 
+      user.name === formData.name && 
+      user.category === formData.category && 
+      Number(user.amount) === Number(formData.amount)
+    );
+
+    if (isDuplicate) {
+      alert('An account with the same name, category, and amount already exists!');
+      return;
+    }
+
     try {
-      const response = await fetch('http://localhost:5000/api/users', {
+      const response = await fetch(`${API_BASE_URL}/api/users`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,7 +94,7 @@ const AddNew = () => {
         return;
       }
 
-      const response = await fetch(`http://localhost:5000/api/users/${userId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json'

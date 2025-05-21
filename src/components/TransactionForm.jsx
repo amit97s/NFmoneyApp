@@ -37,9 +37,9 @@ const TransactionForm = ({
                 value={currentDate}
                 onChange={onDateChange}
                 onKeyDown={(e) => handleKeyDown(e, 'date')}
+                autoComplete="off"
                 className="border rounded px-3 py-1 w-full pr-10"
               />
-              <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5 pointer-events-none" />
             </div>
           </div>
         )}
@@ -52,7 +52,12 @@ const TransactionForm = ({
             onKeyDown={(e) => handleKeyDown(e, accountField)}
             showSuggestions={showSuggestions}
             userSuggestions={userSuggestions}
-            onUserSelect={onUserSelect}
+            onUserSelect={(user) => {
+              onUserSelect(user);
+              // Focus the narration field after selecting a user
+              const narrationInput = document.querySelector('input[name="narration"]');
+              if (narrationInput) narrationInput.focus();
+            }}
             onAddNewUser={onAddNewUser}
           />
           <div>
@@ -65,6 +70,7 @@ const TransactionForm = ({
               value={formData.narration}
               onChange={(e) => onInputChange(type, e)}
               onKeyDown={(e) => handleKeyDown(e, 'narration')}
+              autoComplete="off"
               className="border rounded px-3 py-1 w-full"
             />
           </div>
@@ -79,6 +85,7 @@ const TransactionForm = ({
               onChange={(e) => onInputChange(type, e)}
               onKeyDown={(e) => handleKeyDown(e, 'amount')}
               placeholder="0"
+              autoComplete="off"
               className="border rounded px-3 py-1 w-full"
             />
           </div>
@@ -92,6 +99,7 @@ const TransactionForm = ({
               value={formData.expenses}
               onChange={(e) => onInputChange(type, e)}
               onKeyDown={(e) => handleKeyDown(e, 'expenses')}
+              autoComplete="off"
               className="border rounded px-3 py-1 w-full"
             />
           </div>

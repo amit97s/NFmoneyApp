@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import TransactionTable from '../components/TransactionTable';
 import TransactionForm from '../components/TransactionForm';
 import DateRangeFilter from '../components/DateRangeFilter';
+import API_BASE_URL from '../config/api';
 
 const Home = () => {
   const navigate = useNavigate();
@@ -27,9 +28,11 @@ const Home = () => {
     fetchUsers();
     fetchTransactions();
   }, []);
+  const [isLoading, setIsLoading] = useState(true);
   const fetchTransactions = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/transactions');
+      setIsLoading(true);
+      const response = await fetch(`${API_BASE_URL}/api/transactions`);
       if (response.ok) {
         const data = await response.json();
         if (data[0]?.creditEntry) {
@@ -58,11 +61,13 @@ const Home = () => {
       }
     } catch (error) {
       console.error('Error fetching transactions:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
   const fetchUsers = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/users');
+      const response = await fetch(`${API_BASE_URL}/api/users`);
       if (response.ok) {
         const data = await response.json();
         setUsers(data);
@@ -136,6 +141,7 @@ const Home = () => {
   };
   const handleSubmit = async () => {
     try {
+      setIsLoading(true); // Add loading state before fetch
       const vnNo = currentVnNo;
       if (creditForm.amount && debitForm.amount) {
         const combinedTransaction = {
@@ -157,7 +163,7 @@ const Home = () => {
           vnNo
         };
   
-        const response = await fetch('http://localhost:5000/api/transactions', {
+        const response = await fetch(`${API_BASE_URL}/api/transactions`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -184,17 +190,19 @@ const Home = () => {
   
         setCurrentVnNo(prev => prev + 1);
         await fetchTransactions();
+        setIsLoading(false); // Clear loading state after completion
       } else {
         alert('Please fill in the required fields: Amount');
       }
     } catch (error) {
+      setIsLoading(false); // Don't forget to clear loading state on error
       console.error('Error submitting transaction:', error);
       alert('Failed to save transaction. Please try again.');
     }
   };
   const handleDelete = async (selectedIds) => {
     try {
-      const response = await fetch('http://localhost:5000/api/transactions', {
+      const response = await fetch(`${API_BASE_URL}/api/transactions`, {
         method: 'DELETE',
         headers: {
           'Content-Type': 'application/json',
@@ -273,31 +281,43 @@ const Home = () => {
     <div className="min-h-screen bg-gray-50 px-6 py-3">
       <DateRangeFilter onDisplay={handleDateRangeDisplay} />
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-2">
-        <TransactionTable 
-          transactions={filteredCreditTransactions} 
-          type="credit"
-          onDelete={handleDelete}
-        />
-        <TransactionTable 
-          transactions={filteredDebitTransactions} 
-          type="debit"
-          onDelete={handleDelete}
-        />
+        {isLoading ? (
+          <div className="col-span-2 flex justify-center items-center py-20">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
+        ) : (
+          <>
+            <TransactionTable 
+              transactions={filteredCreditTransactions} 
+              type="credit"
+              onDelete={handleDelete}
+            />
+            <TransactionTable 
+              transactions={filteredDebitTransactions} 
+              type="debit"
+              onDelete={handleDelete}
+            />
+          </>
+        )}
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-2 mb-2">
-        <TransactionForm
-          type="credit"
-          formData={creditForm}
-          currentDate={currentDate}
-          onDateChange={handleDateChange}
-          onInputChange={handleInputChange}
-          onEnterPress={handleEnterPress}
-          showSuggestions={showSuggestions && activeInput === 'credit'}
-          userSuggestions={userSuggestions}
-          onUserSelect={handleUserSelect}
-          onAddNewUser={handleAddNewUser}
-        />
         <div>
+          <h2 className="text-lg font-semibold text-gray-700 mb-2">Credit Entry</h2>
+          <TransactionForm
+            type="credit"
+            formData={creditForm}
+            currentDate={currentDate}
+            onDateChange={handleDateChange}
+            onInputChange={handleInputChange}
+            onEnterPress={handleEnterPress}
+            showSuggestions={showSuggestions && activeInput === 'credit'}
+            userSuggestions={userSuggestions}
+            onUserSelect={handleUserSelect}
+            onAddNewUser={handleAddNewUser}
+          />
+        </div>
+        <div>
+          <h2 className="text-lg font-semibold text-gray-700 mb-2">Debit Entry</h2>
           <TransactionForm
             type="debit"
             formData={debitForm}

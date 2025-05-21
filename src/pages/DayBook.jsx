@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Calendar } from 'lucide-react';
+import API_BASE_URL from '../config/api';
 
 const DayBook = () => {
   const [transactions, setTransactions] = useState([]);
@@ -17,7 +18,7 @@ const DayBook = () => {
 
   const fetchTransactions = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/transactions');
+      const response = await fetch(`${API_BASE_URL}/api/transactions`);
       if (response.ok) {
         const data = await response.json();
         const combinedTransactions = data.map(transaction => ({
