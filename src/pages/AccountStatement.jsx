@@ -4,7 +4,6 @@ import { useState, useEffect } from 'react';
 import API_BASE_URL from '../config/api';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-
 const AccountStatement = () => {
   const location = useLocation();
   const { userId, userName: initialUserName } = location.state || {};
@@ -16,18 +15,15 @@ const AccountStatement = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [users, setUsers] = useState([]);
   const [userName, setUserName] = useState(initialUserName);
-
   useEffect(() => {
     fetchUsers();
   }, []);
-
   useEffect(() => {
     if (userName) {
       fetchTransactions();
       fetchUserDetails();
     }
   }, [userName]);
-
   const fetchUsers = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/users`);
@@ -39,12 +35,10 @@ const AccountStatement = () => {
       console.error('Error fetching users:', error);
     }
   };
-
   const handleUserSelect = (selectedUser) => {
     setUserName(selectedUser.name);
     setSearchTerm('');
   };
-
   const fetchUserDetails = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/users`);
@@ -60,7 +54,6 @@ const AccountStatement = () => {
       console.error('Error fetching user details:', error);
     }
   };
-
   const calculateBalance = () => {
     if (userCategory === 'debtor') {
       return openingBalance + totalDebit - totalCredit;
@@ -68,7 +61,6 @@ const AccountStatement = () => {
       return openingBalance + totalCredit - totalDebit;
     }
   };
-
   const fetchTransactions = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/transactions`);
@@ -96,7 +88,6 @@ const AccountStatement = () => {
       console.error('Error fetching transactions:', error);
     }
   };
-
   const filteredUsers = searchTerm
     ? users.filter(user =>
         user.name.toLowerCase().includes(searchTerm.toLowerCase())
@@ -110,25 +101,18 @@ const  exportToExcel = () => {
 
   const exportToPDF = () => {
     const doc = new jsPDF();
-    
-    // Add header
     doc.setFontSize(18);
     doc.text(`Account Statement - ${userName}`, 14, 20);
-    
-    // Add summary section
     doc.setFontSize(12);
     doc.text(`Opening Balance: ₹${openingBalance.toFixed(2)}`, 14, 35);
     doc.text(`Total Entries: ${transactions.length}`, 14, 45);
     doc.text(`Total Debit: ₹${totalDebit.toFixed(2)}`, 14, 55);
     doc.text(`Total Credit: ₹${totalCredit.toFixed(2)}`, 14, 65);
     doc.text(`Balance Amount: ₹${calculateBalance().toFixed(2)}`, 14, 75);
-    
-    // Add transactions table
     const tableData = transactions.map(transaction => {
       const isCredit = transaction.creditEntry.account === userName;
       const entry = isCredit ? transaction.creditEntry : transaction.debitEntry;
       const otherAccount = isCredit ? transaction.debitEntry.account : transaction.creditEntry.account;
-      
       return [
         new Date(transaction.date).toLocaleDateString(),
         transaction.vnNo,
@@ -139,7 +123,6 @@ const  exportToExcel = () => {
         entry.narration
       ];
     });
-    
     doc.autoTable({
       startY: 85,
       head: [['Date', 'VN No', 'Type', 'Account', 'Amount', 'Expenses', 'Narration']],
@@ -148,7 +131,6 @@ const  exportToExcel = () => {
       styles: { fontSize: 8 },
       headStyles: { fillColor: [75, 75, 75] }
     });
-    
     doc.save(`${userName}_account_statement.pdf`);
   };
   return (
@@ -159,7 +141,6 @@ const  exportToExcel = () => {
         </span>
         Account Statement {userName ? `- ${userName}` : ''}
       </h1>
-
       <div className="mb-6 relative">
         <div className="flex items-center border rounded-lg bg-white p-2 shadow-sm">
           <Search className="h-5 w-5 text-gray-400 mr-2" />
@@ -185,7 +166,6 @@ const  exportToExcel = () => {
           </div>
         )}
       </div>
-
       {userName && (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">

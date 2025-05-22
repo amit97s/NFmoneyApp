@@ -1,21 +1,17 @@
 import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import API_BASE_URL from '../config/api';
-
 const AddNew = () => {
   const location = useLocation();
   const initialName = location.state?.initialName || '';
-  
   const [formData, setFormData] = useState({
     name: initialName,
     category: 'creditor',
     group: 'cash-in-hand',
     amount: ''
   });
-  
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData(prevData => ({
@@ -23,7 +19,6 @@ const AddNew = () => {
       [name]: value
     }));
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     const isDuplicate = users.some(user => 
@@ -31,12 +26,10 @@ const AddNew = () => {
       user.category === formData.category &&
       user.group === formData.group
     );
-
     if (isDuplicate) {
       alert('An account with these details already exists!');
       return;
     }
-
     try {
       const response = await fetch(`${API_BASE_URL}/api/users`, {
         method: 'POST',
@@ -45,16 +38,13 @@ const AddNew = () => {
         },
         body: JSON.stringify(formData)
       });
-
       if (response.ok) {
-        // Reset form
         setFormData({
           name: '',
           category: 'creditor',
           group: 'cash-in-hand',
           amount: ''
         });
-        // Refresh the users list
         fetchUsers();
       } else {
         throw new Error('Failed to add account');
@@ -64,7 +54,6 @@ const AddNew = () => {
       alert('Failed to add account. Please try again.');
     }
   };
-
   const fetchUsers = async () => {
     const controller = new AbortController();
     try {
@@ -84,11 +73,9 @@ const AddNew = () => {
     }
     return () => controller.abort();
   };
-
   useEffect(() => {
     fetchUsers();
   }, []);
-
   const handleDelete = async (userId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
