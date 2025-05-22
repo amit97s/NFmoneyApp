@@ -1,7 +1,9 @@
-import { Calendar, Search } from 'lucide-react';
+import { Calendar, Search, FileSpreadsheet, FileText } from 'lucide-react';
 import { useLocation } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import API_BASE_URL from '../config/api';
+import jsPDF from 'jspdf';
+import 'jspdf-autotable';
 
 const AccountStatement = () => {
   const location = useLocation();
@@ -100,7 +102,55 @@ const AccountStatement = () => {
         user.name.toLowerCase().includes(searchTerm.toLowerCase())
       )
     : [];
+const  exportToExcel = () => {
+    const element = document.getElementById('account-statement-table');
+    const wb = XLSX.utils.table_to_book(element);
+    XLSX.writeFile(wb, 'account_statement.xlsx');
+  };
 
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    
+    // Add header
+    doc.setFontSize(18);
+    doc.text(`Account Statement - ${userName}`, 14, 20);
+    
+    // Add summary section
+    doc.setFontSize(12);
+    doc.text(`Opening Balance: ₹${openingBalance.toFixed(2)}`, 14, 35);
+    doc.text(`Total Entries: ${transactions.length}`, 14, 45);
+    doc.text(`Total Debit: ₹${totalDebit.toFixed(2)}`, 14, 55);
+    doc.text(`Total Credit: ₹${totalCredit.toFixed(2)}`, 14, 65);
+    doc.text(`Balance Amount: ₹${calculateBalance().toFixed(2)}`, 14, 75);
+    
+    // Add transactions table
+    const tableData = transactions.map(transaction => {
+      const isCredit = transaction.creditEntry.account === userName;
+      const entry = isCredit ? transaction.creditEntry : transaction.debitEntry;
+      const otherAccount = isCredit ? transaction.debitEntry.account : transaction.creditEntry.account;
+      
+      return [
+        new Date(transaction.date).toLocaleDateString(),
+        transaction.vnNo,
+        isCredit ? 'Credit' : 'Debit',
+        otherAccount,
+        `₹${entry.amount}`,
+        `₹${entry.expenses || 0}`,
+        entry.narration
+      ];
+    });
+    
+    doc.autoTable({
+      startY: 85,
+      head: [['Date', 'VN No', 'Type', 'Account', 'Amount', 'Expenses', 'Narration']],
+      body: tableData,
+      theme: 'grid',
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [75, 75, 75] }
+    });
+    
+    doc.save(`${userName}_account_statement.pdf`);
+  };
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
       <h1 className="text-2xl font-bold mb-6 flex items-center gap-2">
@@ -159,6 +209,7 @@ const AccountStatement = () => {
               <h3 className="text-sm font-medium text-gray-500">Balance Amount</h3>
               <p className="text-xl font-bold">₹{calculateBalance().toFixed(2)}</p>
             </div>
+            
           </div>
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">
@@ -199,10 +250,31 @@ const AccountStatement = () => {
                       })}
                     </tbody>
                   </table>
+                  
                 </div>
+                
               </div>
+              
             </div>
+            
+            
           </div>
+          <div className="flex flex-wrap gap-4 justify-center mt-6">
+              <button
+                onClick={exportToExcel}
+                className="flex items-center gap-2 bg-green-500 text-white px-6 py-2 rounded-md hover:bg-green-600"
+              >
+                <FileSpreadsheet className="h-5 w-5" />
+                Export to Excel
+              </button>
+              <button
+                onClick={exportToPDF}
+                className="flex items-center gap-2 bg-red-500 text-white px-6 py-2 rounded-md hover:bg-red-600"
+              >
+                <FileText className="h-5 w-5" />
+                Print to PDF
+              </button>
+            </div>
         </>
       )}
     </div>

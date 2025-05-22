@@ -35,6 +35,11 @@ const Home = () => {
       const response = await fetch(`${API_BASE_URL}/api/transactions`);
       if (response.ok) {
         const data = await response.json();
+        if (data.length > 0) {
+          // Find the highest vnNo and add 1
+          const maxVnNo = Math.max(...data.map(t => parseInt(t.vnNo)));
+          setCurrentVnNo(maxVnNo + 1);
+        }
         if (data[0]?.creditEntry) {
           const credit = data.map(t => ({
             ...t.creditEntry,
@@ -145,7 +150,7 @@ const Home = () => {
       const vnNo = currentVnNo;
       if (creditForm.amount && debitForm.amount) {
         const combinedTransaction = {
-          date: currentDate,
+          date: currentDate, // Add this line
           creditAccount: {
             account: creditForm.receivedFrom.trim() || 'N/A',
             amount: Number(creditForm.amount),

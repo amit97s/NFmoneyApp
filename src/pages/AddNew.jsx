@@ -5,56 +5,35 @@ import API_BASE_URL from '../config/api';
 const AddNew = () => {
   const location = useLocation();
   const initialName = location.state?.initialName || '';
-
+  
   const [formData, setFormData] = useState({
     name: initialName,
     category: 'creditor',
     group: 'cash-in-hand',
     amount: ''
   });
-
+  
   const [users, setUsers] = useState([]);
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
-
-  const fetchUsers = async () => {
-    const controller = new AbortController();
-    try {
-      const response = await fetch(`${API_BASE_URL}/api/users`, {
-        signal: controller.signal
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setUsers(data);
-      }
-    } catch (error) {
-      if (error.name === 'AbortError') return;
-      console.error('Error fetching users:', error);
-    }
-    return () => controller.abort();
-  };
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+    const { name, value } = e.target;
+    setFormData(prevData => ({
+      ...prevData,
+      [name]: value
+    }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Check for duplicate entries
     const isDuplicate = users.some(user => 
-      user.name === formData.name && 
-      user.category === formData.category && 
-      Number(user.amount) === Number(formData.amount)
+      user.name.toLowerCase() === formData.name.toLowerCase() &&
+      user.category === formData.category &&
+      user.group === formData.group
     );
 
     if (isDuplicate) {
-      alert('An account with the same name, category, and amount already exists!');
+      alert('An account with these details already exists!');
       return;
     }
 
@@ -68,60 +47,76 @@ const AddNew = () => {
       });
 
       if (response.ok) {
-        const savedUser = await response.json();
-        setUsers([...users, savedUser]);
-        alert('Account added successfully!');
+        // Reset form
         setFormData({
           name: '',
           category: 'creditor',
           group: 'cash-in-hand',
           amount: ''
         });
+        // Refresh the users list
+        fetchUsers();
       } else {
-        alert('Failed to add account');
+        throw new Error('Failed to add account');
       }
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error adding account');
+      console.error('Error adding account:', error);
+      alert('Failed to add account. Please try again.');
     }
   };
 
+  const fetchUsers = async () => {
+    const controller = new AbortController();
+    try {
+      setIsLoading(true);
+      const response = await fetch(`${API_BASE_URL}/api/users`, {
+        signal: controller.signal
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data);
+      }
+    } catch (error) {
+      if (error.name === 'AbortError') return;
+      console.error('Error fetching users:', error);
+    } finally {
+      setIsLoading(false);
+    }
+    return () => controller.abort();
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
   const handleDelete = async (userId) => {
     try {
-      if (!userId) {
-        console.error('Invalid user ID');
-        alert('Cannot delete: Invalid user ID');
-        return;
-      }
-
       const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
         method: 'DELETE',
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
         }
       });
 
       if (response.ok) {
-        setUsers(users.filter(user => user._id !== userId));
-        alert('Account deleted successfully!');
+        // Refresh the users list after successful deletion
+        fetchUsers();
       } else {
-        const errorData = await response.json();
-        console.error('Delete failed:', errorData);
-        alert(`Failed to delete account: ${errorData.message || 'Unknown error'}`);
+        throw new Error('Failed to delete user');
       }
     } catch (error) {
-      console.error('Error:', error);
-      alert('Error deleting account: Network or server error');
+      console.error('Error deleting user:', error);
+      alert('Failed to delete user. Please try again.');
     }
   };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <h1 className="text-2xl font-bold mb-6">Manage Accounts</h1>
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-lg font-bold mb-4">Add New Account</h2>
-          <form className="space-y-4" onSubmit={handleSubmit}>
+      <h1 className="text-2xl font-bold mb-3">Manage Accounts</h1>
+      <div className="grid grid-cols-1 lg:grid-cols-2 col gap-3">
+        <div className="bg-white p-4 rounded-lg shadow-md">
+          <h2 className="text-lg font-bold mb-3">Add New Account</h2>
+          <form className="space-y-2" onSubmit={handleSubmit}>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Name <span className="text-red-500">*</span>
@@ -190,8 +185,8 @@ const AddNew = () => {
             </button>
           </form>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow-md">
-          <div className="flex items-center justify-between mb-4">
+         <div className="bg-white p-6 rounded-lg shadow-md">
+          <div className="flex items-center justify-between mb-2">
             <h2 className="text-lg font-bold">Accounts List</h2>
             <div className="relative">
               <input
@@ -201,12 +196,17 @@ const AddNew = () => {
               />
             </div>
           </div>
-          {users.length === 0 ? (
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span className="ml-2 text-gray-600">Loading accounts...</span>
+            </div>
+          ) : users.length === 0 ? (
             <div className="text-center text-gray-500">
               No accounts found
             </div>
           ) : (
-            <div className="overflow-x-hidden">
+            <div className="overflow-x-hidden max-h-[22rem] overflow-y-auto">
               <table className="w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
